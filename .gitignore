@@ -1,0 +1,5 @@
+.env
+loadtest/lib/
+loadtest/results/
+*.log
+.DS_Store

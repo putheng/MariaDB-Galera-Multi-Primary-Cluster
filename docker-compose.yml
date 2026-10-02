@@ -1,0 +1,88 @@
+name: mariadb-galera
+
+x-galera-common: &galera-common
+  image: mariadb:latest
+  restart: unless-stopped
+  entrypoint: ["/usr/local/bin/galera-entrypoint.sh"]
+  environment: &galera-env
+    MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-root_password}
+    MARIADB_DATABASE: ${MARIADB_DATABASE:-appdb}
+    MARIADB_USER: ${MARIADB_USER:-appuser}
+    MARIADB_PASSWORD: ${MARIADB_PASSWORD:-app_password}
+    GALERA_SST_USER: ${GALERA_SST_USER:-sst_user}
+    GALERA_SST_PASSWORD: ${GALERA_SST_PASSWORD:-sst_password}
+    GALERA_HC_USER: ${GALERA_HC_USER:-hc_user}
+    GALERA_HC_PASSWORD: ${GALERA_HC_PASSWORD:-hc_password}
+    GALERA_PEERS: galera-node1 galera-node2 galera-node3
+  volumes:
+    - ./config/galera.cnf:/etc/mysql/conf.d/99-galera.cnf:ro
+    - ./config/galera-entrypoint.sh:/usr/local/bin/galera-entrypoint.sh:ro
+    - ./config/init:/docker-entrypoint-initdb.d:ro
+  networks:
+    - galera
+  deploy:
+    resources:
+      limits:
+        cpus: "4.0"
+        memory: 4g
+  healthcheck:
+    test: ["CMD", "healthcheck.sh", "--defaults-extra-file=/etc/mysql/healthcheck.cnf", "--connect", "--galera_ready"]
+    interval: 10s
+    timeout: 5s
+    retries: 12
+    start_period: 90s
+
+services:
+  galera-node1:
+    <<: *galera-common
+    container_name: galera-node1
+    hostname: galera-node1
+    environment:
+      <<: *galera-env
+      GALERA_BOOTSTRAP_NODE: "1"
+    ports:
+      - "3306:3306"
+    volumes:
+      - galera-node1-data:/var/lib/mysql
+      - ./config/galera.cnf:/etc/mysql/conf.d/99-galera.cnf:ro
+      - ./config/galera-entrypoint.sh:/usr/local/bin/galera-entrypoint.sh:ro
+      - ./config/init:/docker-entrypoint-initdb.d:ro
+
+  galera-node2:
+    <<: *galera-common
+    container_name: galera-node2
+    hostname: galera-node2
+    environment:
+      <<: *galera-env
+      GALERA_BOOTSTRAP_NODE: "0"
+    ports:
+      - "3307:3306"
+    volumes:
+      - galera-node2-data:/var/lib/mysql
+      - ./config/galera.cnf:/etc/mysql/conf.d/99-galera.cnf:ro
+      - ./config/galera-entrypoint.sh:/usr/local/bin/galera-entrypoint.sh:ro
+      - ./config/init:/docker-entrypoint-initdb.d:ro
+
+  galera-node3:
+    <<: *galera-common
+    container_name: galera-node3
+    hostname: galera-node3
+    environment:
+      <<: *galera-env
+      GALERA_BOOTSTRAP_NODE: "0"
+    ports:
+      - "3308:3306"
+    volumes:
+      - galera-node3-data:/var/lib/mysql
+      - ./config/galera.cnf:/etc/mysql/conf.d/99-galera.cnf:ro
+      - ./config/galera-entrypoint.sh:/usr/local/bin/galera-entrypoint.sh:ro
+      - ./config/init:/docker-entrypoint-initdb.d:ro
+
+networks:
+  galera:
+    driver: bridge
+
+volumes:
+  galera-node1-data:
+  galera-node2-data:
+  galera-node3-data:

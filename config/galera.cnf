@@ -1,0 +1,16 @@
+[galera]
+wsrep_on = ON
+wsrep_cluster_name = galera_cluster
+wsrep_cluster_address = gcomm://galera-node1,galera-node2,galera-node3
+wsrep_sst_method = mariabackup
+wsrep_slave_threads = 2
+wsrep_retry_autocommit = 3
+wsrep_provider_options = "gcache.size=256M"
+
+[mariadbd]
+bind-address = 0.0.0.0
+innodb_buffer_pool_size = 512M
+innodb_log_file_size = 128M
+innodb_flush_log_at_trx_commit = 0
+innodb_flush_method = O_DIRECT
+max_connections = 200
